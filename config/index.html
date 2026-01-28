@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>impress key - Configuration</title>
+    <meta name="description" content="Configure your impress key device via Web Bluetooth. Manage fingerprints and password sequences.">
+    <style>
+        :root {
+            --primary: #4a90d9;
+            --primary-dark: #357abd;
+            --accent: #00d4aa;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --bg: #0a0a0f;
+            --bg-light: #12121a;
+            --text: #eee;
+            --text-muted: #888;
+            --border: #2a2a3a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .header h1 span {
+            color: var(--accent);
+        }
+
+        .header .tagline {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .header .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85em;
+        }
+
+        .header .back-link:hover {
+            color: var(--accent);
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .card h2 {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--primary-dark);
+        }
+
+        button:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        button.success {
+            background: var(--success);
+        }
+
+        button.small {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+
+        .status-dot.connected {
+            background: var(--accent);
+        }
+
+        .fingerprint-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .fp-slot {
+            aspect-ratio: 1;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .fp-slot:hover {
+            border-color: var(--primary);
+        }
+
+        .fp-slot.enrolled {
+            border-color: var(--accent);
+            background: rgba(0, 212, 170, 0.1);
+        }
+
+        .fp-slot.selected {
+            border-color: var(--primary);
+            background: rgba(74, 144, 217, 0.2);
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .fp-slot .fp-id {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .fp-slot .fp-status {
+            font-size: 0.7em;
+            color: var(--text-muted);
+        }
+
+        .fp-slot.enrolled .fp-status {
+            color: var(--accent);
+        }
+
+        .sequence-editor {
+            margin-top: 15px;
+        }
+
+        .slot-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .slot-tab {
+            flex: 1;
+            padding: 8px;
+            background: var(--border);
+            border: none;
+            border-radius: 6px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .slot-tab:hover {
+            background: var(--primary-dark);
+        }
+
+        .slot-tab.active {
+            background: var(--primary);
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: monospace;
+            font-size: 1em;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .button-row button {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .log {
+            background: #000;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.85em;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+        }
+
+        .log-entry.error {
+            color: var(--danger);
+        }
+
+        .log-entry.success {
+            color: var(--accent);
+        }
+
+        .log-entry.info {
+            color: var(--primary);
+        }
+
+        .battery {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .battery-bar {
+            flex: 1;
+            height: 20px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .battery-fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .battery-fill.low {
+            background: var(--danger);
+        }
+
+        .battery-fill.medium {
+            background: var(--warning);
+        }
+
+        .progress-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .progress-overlay.show {
+            display: flex;
+        }
+
+        .progress-box {
+            background: var(--bg-light);
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .progress-box h3 {
+            margin-bottom: 20px;
+        }
+
+        .progress-status {
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .help-text {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .not-supported {
+            background: var(--danger);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .not-supported h3 {
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 480px) {
+            .fingerprint-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 6px;
+            }
+
+            .fp-slot .fp-id {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>impress <span>key</span></h1>
+            <p class="tagline">Device Configuration</p>
+            <a href="https://impress-key.com" class="back-link">&larr; Back to impress-key.com</a>
+        </div>
+
+        <div class="not-supported" id="notSupported" style="display: none;">
+            <h3>Web Bluetooth Not Supported</h3>
+            <p>Please use Chrome or Edge on desktop, or Chrome on Android.</p>
+        </div>
+
+        <!-- Connection -->
+        <div class="card">
+            <h2>Connection</h2>
+            <div class="status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+            <div class="battery" id="batterySection" style="display: none;">
+                <span>Battery:</span>
+                <div class="battery-bar">
+                    <div class="battery-fill" id="batteryFill" style="width: 0%"></div>
+                </div>
+                <span id="batteryText">--%</span>
+            </div>
+        </div>
+
+        <!-- Fingerprints -->
+        <div class="card">
+            <h2>Fingerprints</h2>
+            <div class="fingerprint-grid" id="fpGrid">
+                <!-- Generated by JS -->
+            </div>
+            <div class="button-row">
+                <button onclick="enrollFingerprint()" id="enrollBtn" disabled>Enroll</button>
+                <button onclick="deleteFingerprint()" id="deleteBtn" class="danger" disabled>Delete</button>
+            </div>
+            <div class="button-row">
+                <button onclick="matchTest()" id="matchBtn" disabled>Match Test</button>
+                <button onclick="clearAll()" id="clearBtn" class="danger" disabled>Clear All</button>
+            </div>
+        </div>
+
+        <!-- Sequence Editor -->
+        <div class="card" id="sequenceCard" style="display: none;">
+            <h2>Keyboard Sequence - FP <span id="seqFpId">0</span></h2>
+            <div class="slot-tabs">
+                <button class="slot-tab active" data-slot="0" onclick="selectSlot(0)">Slot 0</button>
+                <button class="slot-tab" data-slot="1" onclick="selectSlot(1)">Slot 1</button>
+                <button class="slot-tab" data-slot="2" onclick="selectSlot(2)">Slot 2</button>
+            </div>
+            <textarea id="seqInput" placeholder="Enter keyboard sequence..."></textarea>
+            <p class="help-text">Use \n for Enter, \t for Tab</p>
+            <div class="button-row">
+                <button onclick="loadSequence()" class="small">Load</button>
+                <button onclick="saveSequence()" class="small success">Save</button>
+            </div>
+        </div>
+
+        <!-- Log -->
+        <div class="card">
+            <h2>Log</h2>
+            <div class="log" id="log"></div>
+            <div class="button-row" style="margin-top: 10px;">
+                <button onclick="clearLog()" class="small">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Overlay -->
+    <div class="progress-overlay" id="progressOverlay">
+        <div class="progress-box">
+            <h3 id="progressTitle">Enrolling...</h3>
+            <div class="progress-status" id="progressStatus">Place finger on sensor</div>
+            <button onclick="cancelOperation()" class="danger">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Lock Overlay -->
+    <div class="progress-overlay" id="lockOverlay">
+        <div class="progress-box">
+            <h3>Verification Required</h3>
+            <div class="progress-status" id="lockStatus">Place registered finger to unlock</div>
+            <button onclick="verifyFingerprint()" class="success" id="verifyBtn">Verify Fingerprint</button>
+            <button onclick="disconnect()" class="danger" style="margin-top: 10px;">Disconnect</button>
+            <p class="help-text" style="margin-top: 15px;">
+                Forgot fingerprint? Hold BTN0+BTN1 for 5s to factory reset.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // UUIDs
+        const SVC_UUID = '12340001-0000-1000-8000-00805f9b34fb';
+        const CHAR_FP_CTRL = '12340002-0000-1000-8000-00805f9b34fb';
+        const CHAR_STATUS = '12340003-0000-1000-8000-00805f9b34fb';
+        const CHAR_SEQ_CTRL = '12340004-0000-1000-8000-00805f9b34fb';
+        const CHAR_BATTERY = '12340005-0000-1000-8000-00805f9b34fb';
+        const CHAR_FP_LIST = '12340006-0000-1000-8000-00805f9b34fb';
+
+        // Commands
+        const CMD_ENROLL = 0x01;
+        const CMD_DELETE = 0x02;
+        const CMD_CLEAR_ALL = 0x03;
+        const CMD_CANCEL = 0x04;
+        const CMD_MATCH = 0x05;
+        const CMD_VERIFY = 0x06;
+
+        // Status codes
+        const STATUS_NAMES = {
+            0x00: 'OK',
+            0x01: 'ERROR',
+            0x02: 'BUSY',
+            0x03: 'INVALID_ARG',
+            0x04: 'TIMEOUT',
+            0x05: 'NOT_FOUND',
+            0x10: 'ENROLL_START',
+            0x11: 'WAITING',
+            0x12: 'CAPTURED',
+            0x13: 'PROCESSING',
+            0x14: 'ENROLL_DONE',
+            0x20: 'LOCKED',
+            0x21: 'UNLOCKED',
+        };
+
+        // State
+        let device = null;
+        let server = null;
+        let service = null;
+        let charFpCtrl = null;
+        let charStatus = null;
+        let charSeqCtrl = null;
+        let charBattery = null;
+        let charFpList = null;
+
+        let selectedFp = null;
+        let selectedSlot = 0;
+        let fpMask = 0;
+        let operationResolve = null;
+        let operationReject = null;
+        let isLocked = true;
+
+        // Initialize fingerprint grid
+        function initFpGrid() {
+            const grid = document.getElementById('fpGrid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'fp-slot';
+                slot.dataset.fpId = i;
+                slot.innerHTML = `
+                    <span class="fp-id">${i}</span>
+                    <span class="fp-status">empty</span>
+                `;
+                slot.onclick = () => selectFingerprint(i);
+                grid.appendChild(slot);
+            }
+        }
+
+        function updateFpGrid() {
+            const slots = document.querySelectorAll('.fp-slot');
+            slots.forEach((slot, i) => {
+                const enrolled = (fpMask & (1 << i)) !== 0;
+                slot.classList.toggle('enrolled', enrolled);
+                slot.querySelector('.fp-status').textContent = enrolled ? 'enrolled' : 'empty';
+            });
+        }
+
+        function selectFingerprint(fpId) {
+            selectedFp = fpId;
+            document.querySelectorAll('.fp-slot').forEach((slot, i) => {
+                slot.classList.toggle('selected', i === fpId);
+            });
+
+            const enrolled = (fpMask & (1 << fpId)) !== 0;
+            document.getElementById('deleteBtn').disabled = !enrolled || !server;
+            document.getElementById('enrollBtn').disabled = !server;
+
+            // Show sequence editor for enrolled fingerprints
+            const seqCard = document.getElementById('sequenceCard');
+            if (enrolled) {
+                seqCard.style.display = 'block';
+                document.getElementById('seqFpId').textContent = fpId;
+                loadSequence();
+            } else {
+                seqCard.style.display = 'none';
+            }
+        }
+
+        function selectSlot(slot) {
+            selectedSlot = slot;
+            document.querySelectorAll('.slot-tab').forEach(tab => {
+                tab.classList.toggle('active', parseInt(tab.dataset.slot) === slot);
+            });
+            loadSequence();
+        }
+
+        // Logging
+        function log(msg, type = '') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${msg}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Connection
+        async function toggleConnection() {
+            if (server && server.connected) {
+                await disconnect();
+            } else {
+                await connect();
+            }
+        }
+
+        async function connect() {
+            try {
+                log('Scanning for devices...', 'info');
+
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'impress key config' }],
+                    optionalServices: [SVC_UUID]
+                });
+
+                log(`Found: ${device.name}`, 'success');
+
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+
+                log('Connecting...');
+                server = await device.gatt.connect();
+
+                log('Getting service...');
+                service = await server.getPrimaryService(SVC_UUID);
+
+                log('Getting characteristics...');
+                charFpCtrl = await service.getCharacteristic(CHAR_FP_CTRL);
+                charStatus = await service.getCharacteristic(CHAR_STATUS);
+                charSeqCtrl = await service.getCharacteristic(CHAR_SEQ_CTRL);
+                charBattery = await service.getCharacteristic(CHAR_BATTERY);
+                charFpList = await service.getCharacteristic(CHAR_FP_LIST);
+
+                // Subscribe to status notifications
+                await charStatus.startNotifications();
+                charStatus.addEventListener('characteristicvaluechanged', onStatusNotification);
+
+                updateConnectionUI(true);
+                log('Connected!', 'success');
+
+                // Read initial data
+                await refreshFingerprints();
+                await readBattery();
+
+            } catch (err) {
+                log(`Error: ${err.message}`, 'error');
+                updateConnectionUI(false);
+            }
+        }
+
+        async function disconnect() {
+            if (device && device.gatt.connected) {
+                device.gatt.disconnect();
+            }
+        }
+
+        function onDisconnected() {
+            log('Disconnected', 'info');
+            updateConnectionUI(false);
+        }
+
+        function updateConnectionUI(connected) {
+            document.getElementById('statusDot').classList.toggle('connected', connected);
+            document.getElementById('statusText').textContent = connected ?
+                `Connected: ${device.name}` : 'Disconnected';
+            document.getElementById('connectBtn').textContent = connected ? 'Disconnect' : 'Connect';
+            document.getElementById('batterySection').style.display = connected ? 'flex' : 'none';
+
+            if (!connected) {
+                isLocked = true;
+                document.getElementById('lockOverlay').classList.remove('show');
+                document.getElementById('verifyBtn').disabled = false;
+                // Clear any pending operations
+                if (operationReject) {
+                    operationReject(new Error('Disconnected'));
+                    operationResolve = null;
+                    operationReject = null;
+                }
+            }
+
+            updateLockUI();
+        }
+
+        function updateLockUI() {
+            const connected = server && server.connected;
+            const unlocked = connected && !isLocked;
+
+            // Show/hide lock overlay
+            document.getElementById('lockOverlay').classList.toggle('show', connected && isLocked);
+
+            // Enable/disable buttons based on lock state
+            document.getElementById('enrollBtn').disabled = !unlocked;
+            document.getElementById('matchBtn').disabled = !unlocked;
+            document.getElementById('clearBtn').disabled = !unlocked;
+            document.getElementById('deleteBtn').disabled = !unlocked || selectedFp === null;
+
+            if (isLocked) {
+                document.getElementById('lockStatus').textContent = 'Place registered finger to unlock';
+            }
+        }
+
+        async function verifyFingerprint() {
+            const lockStatus = document.getElementById('lockStatus');
+            lockStatus.textContent = 'Place finger on sensor...';
+            document.getElementById('verifyBtn').disabled = true;
+
+            try {
+                await new Promise((resolve, reject) => {
+                    operationResolve = resolve;
+                    operationReject = reject;
+
+                    const cmd = new Uint8Array([CMD_VERIFY, 30]); // 30s timeout
+                    charFpCtrl.writeValue(cmd);
+                });
+            } catch (err) {
+                lockStatus.textContent = 'Verification failed: ' + err.message;
+                log(`Verify failed: ${err.message}`, 'error');
+            }
+            document.getElementById('verifyBtn').disabled = false;
+        }
+
+        // Status notifications
+        function onStatusNotification(event) {
+            const value = event.target.value;
+            const status = value.getUint8(0);
+            const name = STATUS_NAMES[status] || `UNKNOWN(0x${status.toString(16)})`;
+
+            // Get capture progress if available
+            let capture = 0, total = 8;
+            if (value.byteLength >= 3) {
+                capture = value.getUint8(1);
+                total = value.getUint8(2);
+            }
+
+            log(`Status: ${name}` + (capture ? ` (${capture}/${total})` : ''),
+                status === 0x00 || status === 0x14 ? 'success' : 'info');
+
+            // Update progress overlay and lock overlay
+            const progressStatus = document.getElementById('progressStatus');
+            const lockStatus = document.getElementById('lockStatus');
+            switch (status) {
+                case 0x10: progressStatus.textContent = 'Place finger on sensor'; break;
+                case 0x11:
+                    // WAITING - waiting for finger
+                    progressStatus.textContent = `Place finger (${capture}/${total})`;
+                    if (isLocked) lockStatus.textContent = 'Place finger on sensor...';
+                    break;
+                case 0x12:
+                    // CAPTURED - finger captured, lift now
+                    progressStatus.textContent = `Captured! Lift finger (${capture}/${total})`;
+                    break;
+                case 0x13:
+                    progressStatus.textContent = `Processing... (${capture}/${total})`;
+                    break;
+                case 0x14:
+                    progressStatus.textContent = 'Success!';
+                    setTimeout(() => hideProgress(), 1000);
+                    if (operationResolve) operationResolve(true);
+                    break;
+                case 0x00:
+                    if (operationResolve) operationResolve(true);
+                    hideProgress();
+                    break;
+                case 0x05:
+                    // NOT_FOUND - fingerprint not recognized
+                    progressStatus.textContent = 'Fingerprint not recognized';
+                    if (isLocked) lockStatus.textContent = 'Fingerprint not recognized. Try again.';
+                    setTimeout(() => hideProgress(), 2000);
+                    if (operationReject) operationReject(new Error(name));
+                    break;
+                case 0x01:
+                case 0x04:
+                    progressStatus.textContent = 'Failed: ' + name;
+                    if (isLocked) lockStatus.textContent = `Failed: ${name}. Try again.`;
+                    setTimeout(() => hideProgress(), 2000);
+                    if (operationReject) operationReject(new Error(name));
+                    break;
+                case 0x20: // LOCKED
+                    isLocked = true;
+                    updateLockUI();
+                    break;
+                case 0x21: // UNLOCKED
+                    isLocked = false;
+                    updateLockUI();
+                    hideProgress();
+                    if (value.byteLength > 1) {
+                        const unlockedBy = value.getUint8(1);
+                        log(`Unlocked by fingerprint ID: ${unlockedBy}`, 'success');
+                    } else {
+                        log('Device unlocked (no fingerprints registered)', 'success');
+                    }
+                    break;
+            }
+
+            // Handle match result
+            if (status === 0x00 && value.byteLength > 1) {
+                const matchedId = value.getUint8(1);
+                log(`Matched fingerprint ID: ${matchedId}`, 'success');
+            }
+        }
+
+        function showProgress(title) {
+            document.getElementById('progressTitle').textContent = title;
+            document.getElementById('progressStatus').textContent = 'Starting...';
+            document.getElementById('progressOverlay').classList.add('show');
+        }
+
+        function hideProgress() {
+            document.getElementById('progressOverlay').classList.remove('show');
+            operationResolve = null;
+            operationReject = null;
+        }
+
+        // Operations
+        async function refreshFingerprints() {
+            try {
+                const value = await charFpList.readValue();
+                fpMask = value.getUint8(0) | (value.getUint8(1) << 8);
+                log(`Fingerprint mask: 0x${fpMask.toString(16).padStart(4, '0')}`);
+                updateFpGrid();
+            } catch (err) {
+                log(`Error reading fingerprints: ${err.message}`, 'error');
+            }
+        }
+
+        async function readBattery() {
+            try {
+                const value = await charBattery.readValue();
+                const level = value.getUint8(0);
+                document.getElementById('batteryText').textContent = `${level}%`;
+                const fill = document.getElementById('batteryFill');
+                fill.style.width = `${level}%`;
+                fill.classList.toggle('low', level < 20);
+                fill.classList.toggle('medium', level >= 20 && level < 50);
+                log(`Battery: ${level}%`);
+            } catch (err) {
+                log(`Error reading battery: ${err.message}`, 'error');
+            }
+        }
+
+        async function enrollFingerprint() {
+            if (selectedFp === null) {
+                log('Select a fingerprint slot first', 'error');
+                return;
+            }
+
+            showProgress(`Enrolling FP ${selectedFp}`);
+
+            try {
+                await new Promise((resolve, reject) => {
+                    operationResolve = resolve;
+                    operationReject = reject;
+
+                    const cmd = new Uint8Array([CMD_ENROLL, selectedFp, 30]); // 30s timeout
+                    charFpCtrl.writeValue(cmd);
+                });
+
+                await refreshFingerprints();
+                selectFingerprint(selectedFp);
+
+            } catch (err) {
+                log(`Enroll failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function deleteFingerprint() {
+            if (selectedFp === null) return;
+
+            if (!confirm(`Delete fingerprint ${selectedFp}?`)) return;
+
+            try {
+                const cmd = new Uint8Array([CMD_DELETE, selectedFp]);
+                await charFpCtrl.writeValue(cmd);
+                log(`Deleted FP ${selectedFp}`, 'success');
+                await refreshFingerprints();
+                selectFingerprint(selectedFp);
+            } catch (err) {
+                log(`Delete failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function clearAll() {
+            if (!confirm('Clear ALL fingerprints?')) return;
+
+            try {
+                const cmd = new Uint8Array([CMD_CLEAR_ALL]);
+                await charFpCtrl.writeValue(cmd);
+                log('Cleared all fingerprints', 'success');
+                await refreshFingerprints();
+                document.getElementById('sequenceCard').style.display = 'none';
+            } catch (err) {
+                log(`Clear failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function matchTest() {
+            showProgress('Match Test');
+            document.getElementById('progressStatus').textContent = 'Place finger on sensor';
+
+            try {
+                await new Promise((resolve, reject) => {
+                    operationResolve = resolve;
+                    operationReject = reject;
+
+                    const cmd = new Uint8Array([CMD_MATCH, 10]); // 10s timeout
+                    charFpCtrl.writeValue(cmd);
+                });
+            } catch (err) {
+                log(`Match test failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function cancelOperation() {
+            try {
+                const cmd = new Uint8Array([CMD_CANCEL]);
+                await charFpCtrl.writeValue(cmd);
+                log('Operation cancelled');
+            } catch (err) {
+                log(`Cancel failed: ${err.message}`, 'error');
+            }
+            hideProgress();
+        }
+
+        // Sequence operations
+        async function loadSequence() {
+            if (selectedFp === null) return;
+
+            try {
+                // Write query
+                const query = new Uint8Array([selectedFp, selectedSlot]);
+                await charSeqCtrl.writeValue(query);
+
+                // Read response
+                const value = await charSeqCtrl.readValue();
+
+                if (value.byteLength >= 3) {
+                    const len = value.getUint8(2);
+                    if (len > 0) {
+                        const seq = new Uint8Array(value.buffer, 3, len);
+                        const text = new TextDecoder().decode(seq);
+                        document.getElementById('seqInput').value = text;
+                        log(`Loaded sequence for FP${selectedFp}/Slot${selectedSlot}: "${text}"`);
+                    } else {
+                        document.getElementById('seqInput').value = '';
+                        log(`No sequence for FP${selectedFp}/Slot${selectedSlot}`);
+                    }
+                }
+            } catch (err) {
+                log(`Load sequence failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function saveSequence() {
+            if (selectedFp === null) return;
+
+            let text = document.getElementById('seqInput').value;
+            // Handle escape sequences
+            text = text.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+
+            const encoder = new TextEncoder();
+            const seqBytes = encoder.encode(text);
+
+            // Build command: [fp_id][slot][len][seq...]
+            const cmd = new Uint8Array(3 + seqBytes.length);
+            cmd[0] = selectedFp;
+            cmd[1] = selectedSlot;
+            cmd[2] = seqBytes.length;
+            cmd.set(seqBytes, 3);
+
+            try {
+                await charSeqCtrl.writeValue(cmd);
+                log(`Saved sequence for FP${selectedFp}/Slot${selectedSlot}`, 'success');
+            } catch (err) {
+                log(`Save sequence failed: ${err.message}`, 'error');
+            }
+        }
+
+        // Initialize
+        initFpGrid();
+
+        // Check Web Bluetooth support
+        if (!navigator.bluetooth) {
+            document.getElementById('notSupported').style.display = 'block';
+            document.getElementById('connectBtn').disabled = true;
+            log('Web Bluetooth not supported!', 'error');
+        }
+    </script>
+</body>
+</html>
