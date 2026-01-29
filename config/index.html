@@ -3,21 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>impress key - Configuration</title>
-    <meta name="description" content="Configure your impress key device via Web Bluetooth. Manage fingerprints and password sequences.">
+    <title>imPress Configuration</title>
     <style>
         :root {
             --primary: #4a90d9;
             --primary-dark: #357abd;
-            --accent: #00d4aa;
             --success: #28a745;
             --danger: #dc3545;
             --warning: #ffc107;
-            --bg: #0a0a0f;
-            --bg-light: #12121a;
+            --bg: #1a1a2e;
+            --bg-light: #16213e;
             --text: #eee;
             --text-muted: #888;
-            --border: #2a2a3a;
+            --border: #333;
         }
 
         * {
@@ -34,38 +32,15 @@
             padding: 20px;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 1.8em;
-            margin-bottom: 5px;
-        }
-
-        .header h1 span {
-            color: var(--accent);
-        }
-
-        .header .tagline {
-            color: var(--text-muted);
-            font-size: 0.9em;
-        }
-
-        .header .back-link {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.85em;
-        }
-
-        .header .back-link:hover {
-            color: var(--accent);
-        }
-
         .container {
             max-width: 600px;
             margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary);
         }
 
         .card {
@@ -135,7 +110,7 @@
         }
 
         .status-dot.connected {
-            background: var(--accent);
+            background: var(--success);
         }
 
         .fingerprint-grid {
@@ -163,8 +138,8 @@
         }
 
         .fp-slot.enrolled {
-            border-color: var(--accent);
-            background: rgba(0, 212, 170, 0.1);
+            border-color: var(--success);
+            background: rgba(40, 167, 69, 0.1);
         }
 
         .fp-slot.selected {
@@ -184,7 +159,7 @@
         }
 
         .fp-slot.enrolled .fp-status {
-            color: var(--accent);
+            color: var(--success);
         }
 
         .sequence-editor {
@@ -266,7 +241,7 @@
         }
 
         .log-entry.success {
-            color: var(--accent);
+            color: var(--success);
         }
 
         .log-entry.info {
@@ -289,7 +264,7 @@
 
         .battery-fill {
             height: 100%;
-            background: var(--accent);
+            background: var(--success);
             transition: width 0.3s;
         }
 
@@ -341,17 +316,46 @@
             margin-top: 5px;
         }
 
-        .not-supported {
-            background: var(--danger);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            margin-bottom: 20px;
+        /* Fingerprint Function Type styles */
+        .fp-func-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        .not-supported h3 {
-            margin-bottom: 10px;
+        .fp-func-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--bg);
+            border-radius: 8px;
+        }
+
+        .fp-func-row .fp-label {
+            min-width: 60px;
+            font-weight: 500;
+        }
+
+        .fp-func-row select {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-light);
+            color: var(--text);
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .fp-func-row select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .fp-func-row select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         @media (max-width: 480px) {
@@ -368,16 +372,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>impress <span>key</span></h1>
-            <p class="tagline">Device Configuration</p>
-            <a href="/" class="back-link">&larr; Back to impress-key.com</a>
-        </div>
-
-        <div class="not-supported" id="notSupported" style="display: none;">
-            <h3>Web Bluetooth Not Supported</h3>
-            <p>Please use Chrome or Edge on desktop, or Chrome on Android.</p>
-        </div>
+        <h1>imPress Config</h1>
 
         <!-- Connection -->
         <div class="card">
@@ -428,6 +423,15 @@
             </div>
         </div>
 
+        <!-- Fingerprint Function Types -->
+        <div class="card" id="fpFuncCard" style="display: none;">
+            <h2>Fingerprint Functions</h2>
+            <p class="help-text" style="margin-bottom: 10px;">Configure what each fingerprint does when matched</p>
+            <div class="fp-func-list" id="fpFuncList">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
         <!-- Log -->
         <div class="card">
             <h2>Log</h2>
@@ -461,7 +465,7 @@
     </div>
 
     <script>
-        // UUIDs
+        // Config Service UUIDs
         const SVC_UUID = '12340001-0000-1000-8000-00805f9b34fb';
         const CHAR_FP_CTRL = '12340002-0000-1000-8000-00805f9b34fb';
         const CHAR_STATUS = '12340003-0000-1000-8000-00805f9b34fb';
@@ -469,13 +473,29 @@
         const CHAR_BATTERY = '12340005-0000-1000-8000-00805f9b34fb';
         const CHAR_FP_LIST = '12340006-0000-1000-8000-00805f9b34fb';
 
-        // Commands
+        // OTP Service UUIDs (for fingerprint function configuration)
+        const OTP_SVC_UUID = '12340010-0000-1000-8000-00805f9b34fb';
+        const OTP_CHAR_CMD = '12340011-0000-1000-8000-00805f9b34fb';
+        const OTP_CHAR_RSP = '12340012-0000-1000-8000-00805f9b34fb';
+
+        // Config Commands
         const CMD_ENROLL = 0x01;
         const CMD_DELETE = 0x02;
         const CMD_CLEAR_ALL = 0x03;
         const CMD_CANCEL = 0x04;
         const CMD_MATCH = 0x05;
         const CMD_VERIFY = 0x06;
+
+        // OTP Commands (for fingerprint function)
+        const OTP_CMD_SET_FP_FUNC = 0x30;
+        const OTP_CMD_GET_FP_FUNC = 0x31;
+
+        // Fingerprint Function Types
+        const FP_FUNC_TYPES = {
+            0x01: 'Password Only',
+            0x02: 'OTP Unlock Only',
+            0x03: 'Password + OTP'
+        };
 
         // Status codes
         const STATUS_NAMES = {
@@ -503,6 +523,12 @@
         let charSeqCtrl = null;
         let charBattery = null;
         let charFpList = null;
+
+        // OTP service state
+        let otpService = null;
+        let otpCharCmd = null;
+        let otpCharRsp = null;
+        let fpFuncTypes = {}; // Map of fpId -> funcType
 
         let selectedFp = null;
         let selectedSlot = 0;
@@ -595,8 +621,8 @@
                 log('Scanning for devices...', 'info');
 
                 device = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'impress key config' }],
-                    optionalServices: [SVC_UUID]
+                    filters: [{ namePrefix: 'imPress-config' }],
+                    optionalServices: [SVC_UUID, OTP_SVC_UUID]
                 });
 
                 log(`Found: ${device.name}`, 'success');
@@ -620,12 +646,27 @@
                 await charStatus.startNotifications();
                 charStatus.addEventListener('characteristicvaluechanged', onStatusNotification);
 
+                // Try to get OTP service for fingerprint function configuration
+                try {
+                    log('Getting OTP service...');
+                    otpService = await server.getPrimaryService(OTP_SVC_UUID);
+                    otpCharCmd = await otpService.getCharacteristic(OTP_CHAR_CMD);
+                    otpCharRsp = await otpService.getCharacteristic(OTP_CHAR_RSP);
+                    log('OTP service connected', 'success');
+                } catch (err) {
+                    log('OTP service not available (fingerprint functions disabled)', 'info');
+                    otpService = null;
+                    otpCharCmd = null;
+                    otpCharRsp = null;
+                }
+
                 updateConnectionUI(true);
                 log('Connected!', 'success');
 
                 // Read initial data
                 await refreshFingerprints();
                 await readBattery();
+                await refreshFpFunctions();
 
             } catch (err) {
                 log(`Error: ${err.message}`, 'error');
@@ -678,6 +719,11 @@
             document.getElementById('matchBtn').disabled = !unlocked;
             document.getElementById('clearBtn').disabled = !unlocked;
             document.getElementById('deleteBtn').disabled = !unlocked || selectedFp === null;
+
+            // Enable/disable function type dropdowns
+            document.querySelectorAll('.fp-func-row select').forEach(select => {
+                select.disabled = !unlocked;
+            });
 
             if (isLocked) {
                 document.getElementById('lockStatus').textContent = 'Place registered finger to unlock';
@@ -803,6 +849,7 @@
                 fpMask = value.getUint8(0) | (value.getUint8(1) << 8);
                 log(`Fingerprint mask: 0x${fpMask.toString(16).padStart(4, '0')}`);
                 updateFpGrid();
+                await refreshFpFunctions();
             } catch (err) {
                 log(`Error reading fingerprints: ${err.message}`, 'error');
             }
@@ -960,14 +1007,124 @@
             }
         }
 
+        // Fingerprint Function Type operations
+        function updateFpFuncUI() {
+            const card = document.getElementById('fpFuncCard');
+            const list = document.getElementById('fpFuncList');
+
+            // Only show if OTP service is available and there are enrolled fingerprints
+            if (!otpService || fpMask === 0) {
+                card.style.display = 'none';
+                return;
+            }
+
+            card.style.display = 'block';
+            list.innerHTML = '';
+
+            // Create a row for each enrolled fingerprint
+            for (let i = 0; i < 10; i++) {
+                if ((fpMask & (1 << i)) === 0) continue;
+
+                const row = document.createElement('div');
+                row.className = 'fp-func-row';
+
+                const label = document.createElement('span');
+                label.className = 'fp-label';
+                label.textContent = `FP ${i}`;
+
+                const select = document.createElement('select');
+                select.id = `fpFunc${i}`;
+                select.disabled = isLocked;
+                select.innerHTML = `
+                    <option value="1" ${fpFuncTypes[i] === 1 ? 'selected' : ''}>Password Only</option>
+                    <option value="2" ${fpFuncTypes[i] === 2 ? 'selected' : ''}>OTP Unlock Only</option>
+                    <option value="3" ${fpFuncTypes[i] === 3 ? 'selected' : ''}>Password + OTP</option>
+                `;
+                select.onchange = () => setFpFunc(i, parseInt(select.value));
+
+                row.appendChild(label);
+                row.appendChild(select);
+                list.appendChild(row);
+            }
+        }
+
+        async function refreshFpFunctions() {
+            if (!otpCharCmd || !otpCharRsp) return;
+
+            fpFuncTypes = {};
+
+            for (let i = 0; i < 10; i++) {
+                if ((fpMask & (1 << i)) === 0) continue;
+
+                try {
+                    const funcType = await getFpFunc(i);
+                    fpFuncTypes[i] = funcType;
+                } catch (err) {
+                    log(`Error getting FP${i} function: ${err.message}`, 'error');
+                    fpFuncTypes[i] = 1; // Default to password only
+                }
+            }
+
+            updateFpFuncUI();
+        }
+
+        async function getFpFunc(fpId) {
+            if (!otpCharCmd || !otpCharRsp) return 1;
+
+            // Build command: [cmd][len][fp_id]
+            const cmd = new Uint8Array(64);
+            cmd[0] = OTP_CMD_GET_FP_FUNC;
+            cmd[1] = 1;
+            cmd[2] = fpId;
+
+            await otpCharCmd.writeValue(cmd);
+
+            // Read response
+            const rsp = await otpCharRsp.readValue();
+            const status = rsp.getUint8(0);
+
+            if (status === 0x00 && rsp.byteLength >= 3) {
+                return rsp.getUint8(2);
+            }
+
+            return 1; // Default
+        }
+
+        async function setFpFunc(fpId, funcType) {
+            if (!otpCharCmd || !otpCharRsp) return;
+
+            try {
+                // Build command: [cmd][len][fp_id][func_type]
+                const cmd = new Uint8Array(64);
+                cmd[0] = OTP_CMD_SET_FP_FUNC;
+                cmd[1] = 2;
+                cmd[2] = fpId;
+                cmd[3] = funcType;
+
+                await otpCharCmd.writeValue(cmd);
+
+                // Read response
+                const rsp = await otpCharRsp.readValue();
+                const status = rsp.getUint8(0);
+
+                if (status === 0x00) {
+                    fpFuncTypes[fpId] = funcType;
+                    log(`Set FP${fpId} function to ${FP_FUNC_TYPES[funcType]}`, 'success');
+                } else {
+                    log(`Failed to set FP${fpId} function: status 0x${status.toString(16)}`, 'error');
+                }
+            } catch (err) {
+                log(`Error setting FP${fpId} function: ${err.message}`, 'error');
+            }
+        }
+
         // Initialize
         initFpGrid();
 
         // Check Web Bluetooth support
         if (!navigator.bluetooth) {
-            document.getElementById('notSupported').style.display = 'block';
+            log('Web Bluetooth not supported! Use Chrome/Edge on desktop or Android.', 'error');
             document.getElementById('connectBtn').disabled = true;
-            log('Web Bluetooth not supported!', 'error');
         }
     </script>
 </body>
