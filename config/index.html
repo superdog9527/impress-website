@@ -621,7 +621,7 @@
                 log('Scanning for devices...', 'info');
 
                 device = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'imPress-config' }],
+                    filters: [{ namePrefix: 'impress key config' }],
                     optionalServices: [SVC_UUID, OTP_SVC_UUID]
                 });
 
